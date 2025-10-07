@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import random
-import time
 
 st.set_page_config(
     page_title="🌦️ Adivina el Clima",
@@ -38,8 +37,8 @@ if "data_clima" not in st.session_state:
     st.session_state.data_clima = {}
 if "respuesta_verificada" not in st.session_state:
     st.session_state.respuesta_verificada = False
-if "auto_avanzar" not in st.session_state:
-    st.session_state.auto_avanzar = False
+if "correcto" not in st.session_state:
+    st.session_state.correcto = False
 
 # --- Iniciar juego ---
 if not st.session_state.jugando:
@@ -49,14 +48,14 @@ if not st.session_state.jugando:
         st.session_state.puntaje = 0
         st.session_state.pregunta_mostrada = False
         st.session_state.respuesta_verificada = False
-        st.session_state.auto_avanzar = False
+        st.session_state.correcto = False
     st.stop()
 
 st.subheader(f"🔎 Ronda {st.session_state.ronda} de {TOTAL_RONDAS}")
 departamento = st.selectbox("📍 Selecciona el departamento:", departamentos)
 
-# --- Mostrar pregunta ---
-if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_state.pregunta_mostrada:
+# --- Generar pregunta ---
+if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_state.pregunta_mostrada == True:
     if not st.session_state.pregunta_mostrada:
         url = f"https://api.openweathermap.org/data/2.5/weather?q={departamento}&appid={API_KEY}&units=metric&lang=es"
         response = requests.get(url)
@@ -81,15 +80,17 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
             st.error("⚠️ No se pudo obtener el clima. Intenta de nuevo.")
             st.stop()
 
+    # --- Mostrar opciones ---
     eleccion = st.radio("🤔 ¿Cuál es el clima actual?", st.session_state.opciones, key=f"opcion_{st.session_state.ronda}")
 
     # --- Verificar respuesta ---
     if not st.session_state.respuesta_verificada:
         if st.button("✅ Verificar respuesta", use_container_width=True):
+            st.session_state.respuesta_verificada = True
             if eleccion == st.session_state.clima_real:
                 st.success("🎉 ¡Correcto!")
                 st.session_state.puntaje += 1
-                st.session_state.auto_avanzar = True  # Activar avance automático
+                st.session_state.correcto = True
             else:
                 st.error(f"❌ Incorrecto. El clima real es: **{st.session_state.clima_real}**")
 
@@ -99,16 +100,15 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
                 f"💨 Viento: {st.session_state.data_clima['wind']['speed']} km/h  \n"
                 f"💧 Humedad: {st.session_state.data_clima['main']['humidity']}%"
             )
-            st.session_state.respuesta_verificada = True
 
-# --- Avanzar automáticamente si es correcto ---
-if st.session_state.auto_avanzar:
-    time.sleep(1)  # Pequeña pausa para que el usuario vea el acierto
-    st.session_state.ronda += 1
-    st.session_state.pregunta_mostrada = False
-    st.session_state.respuesta_verificada = False
-    st.session_state.auto_avanzar = False
-    if st.session_state.ronda > TOTAL_RONDAS:
+# --- Avanzar automáticamente si fue correcto ---
+if st.session_state.correcto:
+    if st.session_state.ronda < TOTAL_RONDAS:
+        st.session_state.ronda += 1
+        st.session_state.pregunta_mostrada = False
+        st.session_state.respuesta_verificada = False
+        st.session_state.correcto = False
+    else:
         st.balloons()
         st.subheader("🏁 ¡Juego Terminado!")
         st.write(f"⭐ Puntaje final: {st.session_state.puntaje}/{TOTAL_RONDAS}")
@@ -122,6 +122,4 @@ if st.session_state.auto_avanzar:
             st.session_state.jugando = False
             st.session_state.pregunta_mostrada = False
             st.session_state.respuesta_verificada = False
-            st.experimental_rerun()
-    else:
-        st.experimental_rerun()
+            st.session_state.correcto = False
