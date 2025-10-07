@@ -43,6 +43,8 @@ if "clima_real" not in st.session_state:
     st.session_state.clima_real = ""
 if "opciones" not in st.session_state:
     st.session_state.opciones = []
+if "data_clima" not in st.session_state:
+    st.session_state.data_clima = {}
 
 # --- Iniciar juego ---
 if not st.session_state.jugando:
@@ -68,9 +70,11 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
 
         if response.status_code == 200:
             st.session_state.clima_real = data["weather"][0]["description"].capitalize()
+            st.session_state.data_clima = data  # <-- Guardar todo el data en session_state
             icono = data["weather"][0]["icon"]
             st.session_state.imagen_url = f"http://openweathermap.org/img/wn/{icono}@2x.png"
 
+            # Crear opciones de respuesta
             posibles_climas = [
                 "Soleado con pocas nubes", "Lluvia ligera", "Nublado total",
                 "Tormentas eléctricas", "Cielo despejado", "Lluvia moderada",
@@ -104,9 +108,9 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
         # Mostrar detalles del clima
         st.image(st.session_state.imagen_url, caption=f"Clima actual en {departamento}", width=150)
         st.info(
-            f"🌡️ Temperatura: {data['main']['temp']}°C  \n"
-            f"💨 Viento: {data['wind']['speed']} km/h  \n"
-            f"💧 Humedad: {data['main']['humidity']}%"
+            f"🌡️ Temperatura: {st.session_state.data_clima['main']['temp']}°C  \n"
+            f"💨 Viento: {st.session_state.data_clima['wind']['speed']} km/h  \n"
+            f"💧 Humedad: {st.session_state.data_clima['main']['humidity']}%"
         )
 
         # Pasar a siguiente ronda
@@ -131,4 +135,5 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
                 st.session_state.jugando = False
                 st.session_state.pregunta_mostrada = False
                 st.experimental_rerun()
+
 
