@@ -45,6 +45,8 @@ if "opciones" not in st.session_state:
     st.session_state.opciones = []
 if "data_clima" not in st.session_state:
     st.session_state.data_clima = {}
+if "respuesta_verificada" not in st.session_state:
+    st.session_state.respuesta_verificada = False
 
 # --- Iniciar juego ---
 if not st.session_state.jugando:
@@ -53,6 +55,7 @@ if not st.session_state.jugando:
         st.session_state.ronda = 1
         st.session_state.puntaje = 0
         st.session_state.pregunta_mostrada = False
+        st.session_state.respuesta_verificada = False
     st.stop()
 
 st.subheader(f"🔎 Ronda {st.session_state.ronda} de {TOTAL_RONDAS}")
@@ -70,7 +73,7 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
 
         if response.status_code == 200:
             st.session_state.clima_real = data["weather"][0]["description"].capitalize()
-            st.session_state.data_clima = data  # <-- Guardar todo el data en session_state
+            st.session_state.data_clima = data
             icono = data["weather"][0]["icon"]
             st.session_state.imagen_url = f"http://openweathermap.org/img/wn/{icono}@2x.png"
 
@@ -86,39 +89,48 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
             random.shuffle(st.session_state.opciones)
 
             st.session_state.pregunta_mostrada = True
+
         else:
             st.error("⚠️ No se pudo obtener el clima. Intenta de nuevo.")
             st.stop()
 
-    # Mostrar opciones
+    # --- Mostrar opciones ---
     eleccion = st.radio(
         "🤔 ¿Cuál es el clima actual?",
         st.session_state.opciones,
         key=f"opcion_{st.session_state.ronda}"
     )
 
-    # --- Botón Verificar Respuesta ---
-    if st.button("✅ Verificar respuesta", use_container_width=True):
-        if eleccion == st.session_state.clima_real:
-            st.success("🎉 ¡Correcto!")
-            st.session_state.puntaje += 1
-        else:
-            st.error(f"❌ Incorrecto. El clima real es: **{st.session_state.clima_real}**")
+    # --- Placeholder para botones ---
+    boton_placeholder = st.empty()
 
-        # Mostrar detalles del clima
-        st.image(st.session_state.imagen_url, caption=f"Clima actual en {departamento}", width=150)
-        st.info(
-            f"🌡️ Temperatura: {st.session_state.data_clima['main']['temp']}°C  \n"
-            f"💨 Viento: {st.session_state.data_clima['wind']['speed']} km/h  \n"
-            f"💧 Humedad: {st.session_state.data_clima['main']['humidity']}%"
-        )
+    # --- Verificar respuesta ---
+    if not st.session_state.respuesta_verificada:
+        if boton_placeholder.button("✅ Verificar respuesta", use_container_width=True):
+            if eleccion == st.session_state.clima_real:
+                st.success("🎉 ¡Correcto!")
+                st.session_state.puntaje += 1
+            else:
+                st.error(f"❌ Incorrecto. El clima real es: **{st.session_state.clima_real}**")
 
-        # --- Botón Siguiente Ronda en placeholder separado ---
-        siguiente_ronda = st.empty()
+            # Mostrar detalles del clima
+            st.image(st.session_state.imagen_url, caption=f"Clima actual en {departamento}", width=150)
+            st.info(
+                f"🌡️ Temperatura: {st.session_state.data_clima['main']['temp']}°C  \n"
+                f"💨 Viento: {st.session_state.data_clima['wind']['speed']} km/h  \n"
+                f"💧 Humedad: {st.session_state.data_clima['main']['humidity']}%"
+            )
+
+            st.session_state.respuesta_verificada = True
+            st.experimental_rerun()
+
+    # --- Botón siguiente ronda o fin de juego ---
+    else:
         if st.session_state.ronda < TOTAL_RONDAS:
-            if siguiente_ronda.button("➡️ Siguiente Ronda", use_container_width=True):
+            if boton_placeholder.button("➡️ Siguiente Ronda", use_container_width=True):
                 st.session_state.ronda += 1
                 st.session_state.pregunta_mostrada = False
+                st.session_state.respuesta_verificada = False
                 st.experimental_rerun()
         else:
             st.balloons()
@@ -134,5 +146,6 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
             if st.button("🔁 Jugar otra vez", use_container_width=True):
                 st.session_state.jugando = False
                 st.session_state.pregunta_mostrada = False
+                st.session_state.respuesta_verificada = False
                 st.experimental_rerun()
 
