@@ -65,7 +65,6 @@ departamento = st.selectbox("📍 Selecciona el departamento:", departamentos)
 
 # --- Botón Ver Pregunta ---
 if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_state.pregunta_mostrada:
-    # Obtener clima solo si no se ha mostrado
     if not st.session_state.pregunta_mostrada:
         url = f"https://api.openweathermap.org/data/2.5/weather?q={departamento}&appid={API_KEY}&units=metric&lang=es"
         response = requests.get(url)
@@ -77,7 +76,6 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
             icono = data["weather"][0]["icon"]
             st.session_state.imagen_url = f"http://openweathermap.org/img/wn/{icono}@2x.png"
 
-            # Crear opciones de respuesta
             posibles_climas = [
                 "Soleado con pocas nubes", "Lluvia ligera", "Nublado total",
                 "Tormentas eléctricas", "Cielo despejado", "Lluvia moderada",
@@ -101,7 +99,6 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
         key=f"opcion_{st.session_state.ronda}"
     )
 
-    # --- Placeholder para botones ---
     boton_placeholder = st.empty()
 
     # --- Verificar respuesta ---
@@ -113,7 +110,6 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
             else:
                 st.error(f"❌ Incorrecto. El clima real es: **{st.session_state.clima_real}**")
 
-            # Mostrar detalles del clima
             st.image(st.session_state.imagen_url, caption=f"Clima actual en {departamento}", width=150)
             st.info(
                 f"🌡️ Temperatura: {st.session_state.data_clima['main']['temp']}°C  \n"
@@ -122,10 +118,9 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
             )
 
             st.session_state.respuesta_verificada = True
-            st.experimental_rerun()
 
     # --- Botón siguiente ronda o fin de juego ---
-    else:
+    if st.session_state.respuesta_verificada:
         if st.session_state.ronda < TOTAL_RONDAS:
             if boton_placeholder.button("➡️ Siguiente Ronda", use_container_width=True):
                 st.session_state.ronda += 1
@@ -148,4 +143,3 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
                 st.session_state.pregunta_mostrada = False
                 st.session_state.respuesta_verificada = False
                 st.experimental_rerun()
-
