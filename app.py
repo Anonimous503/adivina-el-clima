@@ -97,7 +97,7 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
         key=f"opcion_{st.session_state.ronda}"
     )
 
-    # Botón Verificar Respuesta
+    # --- Botón Verificar Respuesta ---
     if st.button("✅ Verificar respuesta", use_container_width=True):
         if eleccion == st.session_state.clima_real:
             st.success("🎉 ¡Correcto!")
@@ -113,9 +113,10 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
             f"💧 Humedad: {st.session_state.data_clima['main']['humidity']}%"
         )
 
-        # Pasar a siguiente ronda
+        # --- Botón Siguiente Ronda en placeholder separado ---
+        siguiente_ronda = st.empty()
         if st.session_state.ronda < TOTAL_RONDAS:
-            if st.button("➡️ Siguiente Ronda", use_container_width=True):
+            if siguiente_ronda.button("➡️ Siguiente Ronda", use_container_width=True):
                 st.session_state.ronda += 1
                 st.session_state.pregunta_mostrada = False
                 st.experimental_rerun()
@@ -123,7 +124,6 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
             st.balloons()
             st.subheader("🏁 ¡Juego Terminado!")
             st.write(f"⭐ Puntaje final: {st.session_state.puntaje}/{TOTAL_RONDAS}")
-
             if st.session_state.puntaje == TOTAL_RONDAS:
                 st.success("🌟 ¡Perfecto! Eres un experto meteorólogo 🌦️")
             elif st.session_state.puntaje >= 3:
@@ -135,5 +135,4 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
                 st.session_state.jugando = False
                 st.session_state.pregunta_mostrada = False
                 st.experimental_rerun()
-
 
