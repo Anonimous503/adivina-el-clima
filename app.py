@@ -10,7 +10,7 @@ st.set_page_config(
 )
 
 st.title("🎮 Juego: Adivina el Clima en El Salvador 🇸🇻")
-st.markdown("Adivina correctamente el clima actual de los departamentos de El Salvador y gana puntos!")
+st.markdown("Adivina correctamente el clima actual y mira la animación correspondiente!")
 
 departamentos = [
     "Ahuachapán", "Cabañas", "Chalatenango", "Cuscatlán", "La Libertad",
@@ -22,24 +22,21 @@ API_KEY = "3e43c04f02aeda8706ca4ad000bfb157"
 TOTAL_RONDAS = 5
 
 # --- Estado del juego ---
-if "ronda" not in st.session_state:
-    st.session_state.ronda = 1
-if "puntaje" not in st.session_state:
-    st.session_state.puntaje = 0
-if "jugando" not in st.session_state:
-    st.session_state.jugando = False
-if "pregunta_mostrada" not in st.session_state:
-    st.session_state.pregunta_mostrada = False
-if "clima_real" not in st.session_state:
-    st.session_state.clima_real = ""
-if "opciones" not in st.session_state:
-    st.session_state.opciones = []
-if "data_clima" not in st.session_state:
-    st.session_state.data_clima = {}
-if "respuesta_verificada" not in st.session_state:
-    st.session_state.respuesta_verificada = False
-if "auto_avanzar" not in st.session_state:
-    st.session_state.auto_avanzar = False
+for key in ["ronda","puntaje","jugando","pregunta_mostrada",
+            "clima_real","opciones","data_clima","respuesta_verificada"]:
+    if key not in st.session_state:
+        st.session_state[key] = 0 if key in ["ronda","puntaje"] else False if key in ["jugando","pregunta_mostrada","respuesta_verificada"] else ""
+
+placeholder = st.empty()
+
+# --- GIFs por tipo de clima ---
+clima_gifs = {
+    "lluvia": "https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif",
+    "nublado": "https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif",
+    "sol": "https://media.giphy.com/media/xT0xeJpnrWC4XWblEk/giphy.gif",
+    "tormenta": "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
+    "nieve": "https://media.giphy.com/media/3o6Zt6ML6BklcajjsA/giphy.gif"
+}
 
 # --- Iniciar juego ---
 if not st.session_state.jugando:
@@ -49,13 +46,10 @@ if not st.session_state.jugando:
         st.session_state.puntaje = 0
         st.session_state.pregunta_mostrada = False
         st.session_state.respuesta_verificada = False
-        st.session_state.auto_avanzar = False
     st.stop()
 
 st.subheader(f"🔎 Ronda {st.session_state.ronda} de {TOTAL_RONDAS}")
 departamento = st.selectbox("📍 Selecciona el departamento:", departamentos)
-
-placeholder = st.empty()  # Contenedor para manejar avance automático
 
 def generar_pregunta():
     url = f"https://api.openweathermap.org/data/2.5/weather?q={departamento}&appid={API_KEY}&units=metric&lang=es"
@@ -64,8 +58,7 @@ def generar_pregunta():
     if response.status_code == 200:
         st.session_state.clima_real = data["weather"][0]["description"].capitalize()
         st.session_state.data_clima = data
-        icono = data["weather"][0]["icon"]
-        st.session_state.imagen_url = f"http://openweathermap.org/img/wn/{icono}@2x.png"
+        st.session_state.imagen_url = f"http://openweathermap.org/img/wn/{data['weather'][0]['icon']}@2x.png"
 
         posibles_climas = [
             "Soleado con pocas nubes", "Lluvia ligera", "Nublado total",
@@ -94,13 +87,12 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
             if correcto:
                 st.success("🎉 ¡Correcto!")
                 st.session_state.puntaje += 1
-                # --- Avanzar automáticamente después de 1 segundo ---
                 time.sleep(1)
                 if st.session_state.ronda < TOTAL_RONDAS:
                     st.session_state.ronda += 1
                     st.session_state.pregunta_mostrada = False
                     st.session_state.respuesta_verificada = False
-                    placeholder.empty()  # Fuerza render limpio para la siguiente ronda
+                    placeholder.empty()
                 else:
                     st.balloons()
                     st.subheader("🏁 ¡Juego Terminado!")
@@ -113,14 +105,29 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
                         st.warning("🌧️ Necesitas practicar más... El clima es impredecible 😅")
                     if st.button("🔁 Jugar otra vez", use_container_width=True):
                         st.session_state.jugando = False
-                        st.session_state.pregunta_mostrada = False
-                        st.session_state.respuesta_verificada = False
                         st.session_state.ronda = 1
                         st.session_state.puntaje = 0
+                        st.session_state.pregunta_mostrada = False
+                        st.session_state.respuesta_verificada = False
             else:
                 st.error(f"❌ Incorrecto. El clima real es: **{st.session_state.clima_real}**")
 
-            st.image(st.session_state.imagen_url, caption=f"Clima actual en {departamento}", width=150)
+            # --- Mostrar GIF según clima ---
+            clima_lower = st.session_state.clima_real.lower()
+            gif_url = clima_gifs.get("lluvia")  # default
+            if "lluvia" in clima_lower or "llovizna" in clima_lower:
+                gif_url = clima_gifs["lluvia"]
+            elif "nublado" in clima_lower:
+                gif_url = clima_gifs["nublado"]
+            elif "soleado" in clima_lower or "despejado" in clima_lower:
+                gif_url = clima_gifs["sol"]
+            elif "tormenta" in clima_lower:
+                gif_url = clima_gifs["tormenta"]
+            elif "nieve" in clima_lower:
+                gif_url = clima_gifs["nieve"]
+
+            st.image(gif_url, width=250)
+
             st.info(
                 f"🌡️ Temperatura: {st.session_state.data_clima['main']['temp']}°C  \n"
                 f"💨 Viento: {st.session_state.data_clima['wind']['speed']} km/h  \n"
