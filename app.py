@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import random
+import time
 
 st.set_page_config(
     page_title="🌦️ Adivina el Clima",
@@ -37,8 +38,8 @@ if "data_clima" not in st.session_state:
     st.session_state.data_clima = {}
 if "respuesta_verificada" not in st.session_state:
     st.session_state.respuesta_verificada = False
-if "avanzar_ronda" not in st.session_state:
-    st.session_state.avanzar_ronda = False
+if "auto_avanzar" not in st.session_state:
+    st.session_state.auto_avanzar = False
 
 # --- Iniciar juego ---
 if not st.session_state.jugando:
@@ -48,7 +49,7 @@ if not st.session_state.jugando:
         st.session_state.puntaje = 0
         st.session_state.pregunta_mostrada = False
         st.session_state.respuesta_verificada = False
-        st.session_state.avanzar_ronda = False
+        st.session_state.auto_avanzar = False
     st.stop()
 
 st.subheader(f"🔎 Ronda {st.session_state.ronda} de {TOTAL_RONDAS}")
@@ -88,6 +89,7 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
             if eleccion == st.session_state.clima_real:
                 st.success("🎉 ¡Correcto!")
                 st.session_state.puntaje += 1
+                st.session_state.auto_avanzar = True  # Activar avance automático
             else:
                 st.error(f"❌ Incorrecto. El clima real es: **{st.session_state.clima_real}**")
 
@@ -97,35 +99,29 @@ if st.button("🌤️ Ver pregunta", use_container_width=True) or st.session_sta
                 f"💨 Viento: {st.session_state.data_clima['wind']['speed']} km/h  \n"
                 f"💧 Humedad: {st.session_state.data_clima['main']['humidity']}%"
             )
-
             st.session_state.respuesta_verificada = True
 
-    # --- Botón Siguiente Ronda ---
-    if st.session_state.respuesta_verificada:
-        if st.session_state.ronda < TOTAL_RONDAS:
-            if st.button("➡️ Siguiente Ronda", use_container_width=True):
-                st.session_state.ronda += 1
-                st.session_state.pregunta_mostrada = False
-                st.session_state.respuesta_verificada = False
-                st.session_state.avanzar_ronda = True
+# --- Avanzar automáticamente si es correcto ---
+if st.session_state.auto_avanzar:
+    time.sleep(1)  # Pequeña pausa para que el usuario vea el acierto
+    st.session_state.ronda += 1
+    st.session_state.pregunta_mostrada = False
+    st.session_state.respuesta_verificada = False
+    st.session_state.auto_avanzar = False
+    if st.session_state.ronda > TOTAL_RONDAS:
+        st.balloons()
+        st.subheader("🏁 ¡Juego Terminado!")
+        st.write(f"⭐ Puntaje final: {st.session_state.puntaje}/{TOTAL_RONDAS}")
+        if st.session_state.puntaje == TOTAL_RONDAS:
+            st.success("🌟 ¡Perfecto! Eres un experto meteorólogo 🌦️")
+        elif st.session_state.puntaje >= 3:
+            st.info("💡 ¡Bien hecho! Conoces bastante del clima 🌤️")
         else:
-            st.balloons()
-            st.subheader("🏁 ¡Juego Terminado!")
-            st.write(f"⭐ Puntaje final: {st.session_state.puntaje}/{TOTAL_RONDAS}")
-            if st.session_state.puntaje == TOTAL_RONDAS:
-                st.success("🌟 ¡Perfecto! Eres un experto meteorólogo 🌦️")
-            elif st.session_state.puntaje >= 3:
-                st.info("💡 ¡Bien hecho! Conoces bastante del clima 🌤️")
-            else:
-                st.warning("🌧️ Necesitas practicar más... El clima es impredecible 😅")
-
-            if st.button("🔁 Jugar otra vez", use_container_width=True):
-                st.session_state.jugando = False
-                st.session_state.pregunta_mostrada = False
-                st.session_state.respuesta_verificada = False
-                st.session_state.avanzar_ronda = False
-
-# --- Forzar rerun solo si se avanzó ronda ---
-if st.session_state.avanzar_ronda:
-    st.session_state.avanzar_ronda = False
-    st.experimental_rerun()
+            st.warning("🌧️ Necesitas practicar más... El clima es impredecible 😅")
+        if st.button("🔁 Jugar otra vez", use_container_width=True):
+            st.session_state.jugando = False
+            st.session_state.pregunta_mostrada = False
+            st.session_state.respuesta_verificada = False
+            st.experimental_rerun()
+    else:
+        st.experimental_rerun()
